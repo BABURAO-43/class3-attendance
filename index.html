@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Class 3 Attendance Tracker (2025–26)</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -44,7 +44,9 @@
         row.innerHTML = `
           <td class="border p-2 text-center">${index + 1}</td>
           <td class="border p-2">${student}</td>
-          <td class="border p-2 text-center"><input type="checkbox" /></td>
+          <td class="border p-2 text-center">
+            <input type="checkbox" id="present-${index}" />
+          </td>
         `;
         tbody.appendChild(row);
       });
@@ -53,30 +55,40 @@
     document.getElementById("saveLocal").addEventListener("click", () => {
       const date = dateInput.value;
       if (!date) return alert("Please select a date.");
-      const attendance = Array.from(tbody.children).map((row, i) => ({
-        name: students[i],
-        present: row.children[2].children[0].checked,
+      const attendance = students.map((name, index) => ({
+        id: index + 1,
+        name,
+        present: document.getElementById(`present-${index}`).checked,
       }));
       localStorage.setItem("attendance_" + date, JSON.stringify(attendance));
       alert("Saved locally!");
     });
 
-    document.getElementById("syncGoogle").addEventListener("click", () => {
-      const date = dateInput.value;
-      if (!date) return alert("Please select a date.");
-      const attendance = Array.from(tbody.children).map((row, i) => ({
-        name: students[i],
-        present: row.children[2].children[0].checked ? "Yes" : "No",
-      }));
+    document.getElementById("syncGoogle").addEventListener("click", function () {
+      const data = {
+        date: dateInput.value,
+        students: students.map((name, index) => ({
+          id: index + 1,
+          name,
+          present: document.getElementById(`present-${index}`).checked,
+        })),
+      };
 
-      fetch("https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_ID/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbxDtqkCBzkOzmuLPxRrpSMTyzyMr0a3NeWlmzKzXR9qhBVmK6e7S6q09TeFMMnYYxz0/exec", {
         method: "POST",
-        body: JSON.stringify({ date, attendance }),
-        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
       })
-        .then(res => res.text())
-        .then(msg => alert("Google Sync: " + msg))
-        .catch(() => alert("Failed to sync to Google."));
+        .then((res) => res.text())
+        .then((msg) => {
+          alert("Synced to Google: " + msg);
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Failed to sync to Google.");
+        });
     });
 
     renderTable();
